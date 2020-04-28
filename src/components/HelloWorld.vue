@@ -16,7 +16,7 @@
       <div class="list">
         <h2>タスク一覧</h2>
         <ul>
-          <li v-for="item in list">{{item.todo}}</li>
+          <li v-for="(value, key) in list" :key="key">{{value.todo}}<button class="delete" @click="deleteTodo(key)">削除 {{key}}</button></li>
         </ul>
       </div>
     </div>
@@ -32,10 +32,15 @@ export default {
     return {
       name: firebase.auth().currentUser.email,
       newTodoName: '',
+      database: '',
+      todosRef: '',
       list: [],
     }
   },
   created () {
+    this.database = firebase.database();
+    this.uid = firebase.auth().currentUser.uid;
+    this.todosRef = this.database.ref("todos/");
     // 認証チェック
     firebase.auth().onAuthStateChanged( user => {
       if (user) {
@@ -46,11 +51,14 @@ export default {
   },
   methods: {
     addTodo () {
-      firebase.database().ref('todos').push({
+      this.todosRef.push({
         todo: this.newTodoName,
       }, () => {
         this.newTodoName = ''
       })
+    },
+    deleteTodo(key) {
+      this.todosRef.child(key).remove();
     },
     signOut () {
       firebase.auth().signOut().then(() => {
@@ -58,7 +66,7 @@ export default {
       })
     },
     listen () {
-      firebase.database().ref('todos/').on('value', snapshot => {
+      this.todosRef.on('value', snapshot => {
         if (snapshot) {
           const rootList = snapshot.val()
           let list = []
@@ -91,9 +99,19 @@ export default {
     text-align: left;
   }
   .todo ul li {
+    display: flex;
+    justify-content: space-between;
     margin-bottom: 20px;
     padding: 15px 20px;
     border: 1px solid #eee;
     box-shadow: 0 3px 5px rgba(0,0,0,.10);
+  }
+  .delete {
+    background-color: #000;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 10px;
+    color: #fff;
+    border-radius: 10px;
   }
 </style>
